@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản Lý Ngân Hàng Câu Hỏi Hóa Học</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-6">
+  <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+    <h1 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+      <span class="text-indigo-600">🎓</span> Quản Lý Ngân Hàng Câu Hỏi Thông Minh
+    </h1>
+    <div class="space-y-4">
+      <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+        <label class="font-bold text-xs text-indigo-900 block mb-2">📥 Nhập file Word đề thi (.docx):</label>
+        <input type="file" id="wordFile" accept=".docx" class="text-xs w-full mb-3 p-2 bg-white rounded border">
+        <button onclick="uploadWord()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs">
+          Phân Tích, Gắn Thẻ AI & Kiểm Tra Trùng
+        </button>
+      </div>
+      <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+        <label class="font-bold text-xs text-emerald-900 block mb-2">📤 Xuất toàn bộ Ngân hàng ra file Word:</label>
+        <button onclick="exportWord()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs">
+          Tải Xuống File .DOCX (Đáp án gạch chân)
+        </button>
+      </div>
+    </div>
+    <div id="statusMsg" class="mt-4 text-xs font-medium text-center"></div>
+    <div id="duplicateBox" class="mt-4 hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+      <h3 class="font-bold mb-1">⚠️ Phát hiện câu hỏi trùng lặp (>95%):</h3>
+      <div id="duplicateList" class="space-y-1"></div>
+    </div>
+  </div>
+  <script>
+    async function uploadWord() {
+      const fileInput = document.getElementById('wordFile');
+      const msg = document.getElementById('statusMsg');
+      if (!fileInput.files[0]) return alert("Vui lòng chọn file Word!");
+      msg.innerText = "Đang xử lý bóc tách và phân tích AI...";
+      msg.className = "mt-4 text-xs font-medium text-blue-600";
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      try {
+        const res = await fetch('/api/questions/import-word', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+          msg.innerText = `✅ Đã thêm thành công ${data.added_count} câu hỏi vào ngân hàng!`;
+          msg.className = "mt-4 text-xs font-medium text-emerald-600";
+          if (data.duplicates_found > 0) {
+            document.getElementById('duplicateBox').classList.remove('hidden');
+            document.getElementById('duplicateList').innerHTML = data.duplicates.map(d => `<p>• Trùng với: "${d.existing}"</p>`).join('');
+          }
+        }
+      } catch (err) {
+        msg.innerText = "❌ Lỗi kết nối đến máy chủ!";
+        msg.className = "mt-4 text-xs font-medium text-rose-600";
+      }
+    }
+    function exportWord() {
+      window.location.href = '/api/questions/export-word';
+    }
+  </script>
+</body>
+</html>
